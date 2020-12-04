@@ -1,58 +1,104 @@
-val input = "..##.......\n#...#...#..\n.#....#..#.\n..#.#...#.#\n.#...##..#.\n..#.##.....\n.#.#.#....#\n.#........#\n#.##...#...\n#...##....#\n.#..#...#.#".split('\n')
+val input =
+  """|ecl:gry pid:860033327 eyr:2020 hcl:#fffffd
+     |byr:1937 iyr:2017 cid:147 hgt:183cm
+     |
+     |iyr:2013 ecl:amb cid:350 eyr:2023 pid:028048884
+     |hcl:#cfa07d byr:1929
+     |
+     |hcl:#ae17e1 iyr:2013
+     |eyr:2024
+     |ecl:brn pid:760753108 byr:1931
+     |hgt:179cm
+     |
+     |hcl:#cfa07d eyr:2025 pid:166559648
+     |iyr:2011 ecl:brn hgt:59in""".stripMargin
+
+
+val input =
+  """|eyr:1972 cid:100
+     |hcl:#18171d ecl:amb hgt:170 pid:186cm iyr:2018 byr:1926
+     |
+     |iyr:2019
+     |hcl:#602927 eyr:1967 hgt:170cm
+     |ecl:grn pid:012533040 byr:1946
+     |
+     |hcl:dab227 iyr:2012
+     |ecl:brn hgt:182cm pid:021572410 eyr:2020 byr:1992 cid:277
+     |
+     |hgt:59cm ecl:zzz
+     |eyr:2038 hcl:74454a iyr:2023
+     |pid:3556412378 byr:2007""".stripMargin
+
+
+val input = """|pid:087499704 hgt:74in ecl:grn iyr:2012 eyr:2030 byr:1980
+              |hcl:#623a2f
+              |
+              |eyr:2029 ecl:blu cid:129 byr:1989
+              |iyr:2014 pid:896056539 hcl:#a97842 hgt:165cm
+              |
+              |hcl:#888785
+              |hgt:164cm byr:2001 iyr:2015 cid:88
+              |pid:545766238 ecl:hzl
+              |eyr:2022
+              |
+              |iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719""".stripMargin
+
+
+val requiredFields = Array(
+  "byr", // (Birth Year)
+  "iyr", // (Issue Year)
+  "eyr", // (Expiration Year)
+  "hgt", // (Height)
+  "hcl", // (Hair Color)
+  "ecl", // (Eye Color)
+  "pid", // (Passport ID)
+  //  "cid", // (Country ID)
+)
+"#[0-9a-f]{6}".r.matches("#623a2f")
+
+input.split("\n\n").map(_.split(Array('\n', ' ', ':')).grouped(2).map {
+  // (Birth Year) - four digits; at least 1920 and at most 2002.
+  case Array("byr", value) => value.toInt >= 1920 && value.toInt <= 2002
+  // (Issue Year) - four digits; at least 2010 and at most 2020.
+  case Array("iyr", value) => value.toInt >= 2010 && value.toInt <= 2020
+  // (Expiration Year) - four digits; at least 2020 and at most 2030.
+  case Array("eyr", value) => value.toInt >= 2020 && value.toInt <= 2030
+  // (Height) - a number followed by either cm or in:
+  // - If cm, the number must be at least 150 and at most 193.
+  // - If in, the number must be at least 59 and at most 76.
+  case Array("hgt", value) =>
+    val unit = "[a-z]+".r.findFirstIn(value)
+    val actualValue = "[0-9]+".r.findFirstIn(value).get.toInt
+
+    if (unit.isEmpty)
+      false
+    else if (unit.get == "cm")
+      actualValue >= 150 && actualValue <= 193
+    else if (unit.get == "in")
+      actualValue >= 59 && actualValue <= 76
+    else
+      false
+  // (Hair Color) - a # followed by exactly six characters 0-9 or a-f.
+  case Array("hcl", value) => "#[0-9Aa-f]{6}".r.matches(value)
+  // (Eye Color) - exactly one of: amb blu brn gry grn hzl oth.
+  case Array("ecl", value) => Set("amb", "blu", "brn", "gry", "grn", "hzl", "oth").contains(value)
+  // pid (Passport ID) - a nine-digit number, including leading zeroes.
+  case Array("pid", value) => "[0-9]{9}".r.matches(value)
+  case Array("cid", _) => false
+}.toList)
 /*
-..##.......
-#...#...#..
-.#....#..#.
-..#.#...#.#
-.#...##..#.
+ecl:gry pid:860033327 eyr:2020 hcl:#fffffd
+byr:1937 iyr:2017 cid:147 hgt:183cm
+
+iyr:2013 ecl:amb cid:350 eyr:2023 pid:028048884
+hcl:#cfa07d byr:1929
+
+hcl:#ae17e1 iyr:2013
+eyr:2024
+ecl:brn pid:760753108 byr:1931
+hgt:179cm
+
+hcl:#cfa07d eyr:2025 pid:166559648
+iyr:2011 ecl:brn hgt:59in
 */
 
-
-// Down = 11
-// Right = 3
-val lineLength = 11
-val step = 11 + 3
-val rightStep = 3
-val downStep = 1
-// Next pos 14 - 1
-// Next pos 28 - 1
-val highlightPos = List(
-  step, // left 3
-  2 * step, // left 6
-  3 * step, // left 9
-  4 * step // 12
-)
-
-//input.tail.zipWithIndex.foldLeft(0)((acc, b) => {
-//  println(acc, b)
-//  acc + 1
-//})
-//input.tail.zipWithIndex
-//input.tail.zip(LazyList from 1).foldLeft(0) {
-//  case (acc, (line, pos)) => {
-//    if (line.charAt(((pos)*rightStep) % lineLength) == '#') acc + 1
-//    else acc
-//  }
-//}
-
-val downStep = 1
-input.tail.grouped(downStep).map((x) => {
-  println(x.lift(0))
-  x.take(0)
-}).toList
-//  .flatMap(_.take(downStep-1))
-//  .zip(LazyList from 1).foldLeft(0) {
-//  case (acc, (line, pos)) => {
-//    if (line.charAt(((pos)*rightStep) % lineLength) == '#') acc + 1
-//    else acc
-//  }
-//}
-
-//input.toList.zipWithIndex.map{
-//  case Tuple2(l, i) =>
-//                if (highlightPos.contains(i)) s"($l)"
-//                else if (i!= 0 && i % lineLength == 0) s"\n$l"
-//                else l
-//}.mkString("")
-
-input.tail.zip(LazyList from 1)
